@@ -1,58 +1,51 @@
-import streamlit as st
-import hashlib
 import datetime
+import streamlit as st
 
-# Użytkownicy
+# Prosta baza użytkowników i haseł (na potrzeby demo, bez hashowania)
 USERS = {
-    "demo": {
-        "password_hash": hashlib.sha256("demo".encode()).hexdigest(),
-        "active": True,
-        "expire_date": (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-    },
-    "Wolf": {
-        "password_hash": hashlib.sha256("Wolf".encode()).hexdigest(),
-        "active": True,
-        "expire_date": None
-    }
+    "demo": "demo",
+    "Wolf": "Wolf",
 }
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+# Czas ważności konta demo (w godzinach)
+DEMO_EXPIRATION_HOURS = 24
 
-def check_login():
-    if "login" not in st.session_state:
-        st.session_state.login = False
-        st.session_state.user = None
+def check_login(username: str, password: str) -> bool:
+    username = username.strip()
+    password = password.strip()
 
-    if not st.session_state.login:
-        st.title("🔐 Logowanie")
-        st.info("Konto demo: login `demo`, hasło `demo`")
+    if username not in USERS:
+        return False
 
-        username = st.text_input("Login")
-        password = st.text_input("Hasło", type="password")
+    if USERS[username] != password:
+        return False
 
-        if st.button("Zaloguj"):
-            if username not in USERS:
-                st.error("Niepoprawny login lub hasło.")
-                return None
+    # Konto Wolf jest zawsze aktywne
+    if username == "Wolf":
+        return True
 
-            user = USERS[username]
-            if hash_password(password) == user["password_hash"]:
-                if not user["active"]:
-                    st.error("Konto nieaktywne.")
-                    return None
-
-                if user["expire_date"]:
-                    if datetime.datetime.strptime(user["expire_date"], "%Y-%m-%d") < datetime.datetime.now():
-                        st.error("Twoje konto wygasło.")
-                        return None
-
-                st.session_state.login = True
-                st.session_state.user = username
-                st.success(f"Zalogowano jako {username}")
-                return username
+    # Konto demo jest ważne tylko 24 godziny od zalogowania
+    if username == "demo":
+        # Sprawdzamy czy w sesji mamy czas logowania
+        login_time = st.session_state.get("login_time", None)
+        if login_time is None:
+            # Jeśli nie ma, to logowanie jest OK (pierwsze logowanie)
+            return True
+        else:
+            now = datetime.datetime.now()
+            if isinstance(login_time, str):
+                # Jeśli login_time zapisał się jako string, konwertujemy
+                try:
+                    login_time = datetime.datetime.fromisoformat(login_time)
+                except Exception:
+                    return False
+            elapsed = now - login_time
+            if elapsed.total_seconds() > DEMO_EXPIRATION_HOURS * 3600:
+                # Przekroczono 24h - demo wygasło
+                return False
             else:
-                st.error("Niepoprawny login lub hasło.")
-                return None
-    else:
-        return st.session_state.user
+                return True
+
+    # Inne konta (jeśli dodasz) — domyślnie odrzucamy
+    return False
+
