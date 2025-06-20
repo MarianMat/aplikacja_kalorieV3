@@ -1,0 +1,1 @@
+# Obsługa zdjęć i AI
