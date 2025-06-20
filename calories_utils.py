@@ -2,61 +2,32 @@ import streamlit as st
 import pandas as pd
 import datetime
 
-MEALS_FILE = "meals_data.csv"
+MEALS_CSV = "meals_data.csv"
 
-GI_LIST = {
-    "chleb biały": 70,
-    "ryż biały": 73,
-    "banan": 51,
-    "jabłko": 38,
-    "marchew": 35,
-    "ziemniaki": 85,
-    "makaron": 50,
-}
+def add_meal_form(username):
+    with st.form("Dodaj posiłek"):
+        st.subheader("➕ Dodaj posiłek")
 
-def calculate_gi(meal_name):
-    name_lower = meal_name.lower()
-    for key in GI_LIST.keys():
-        if key in name_lower:
-            return GI_LIST[key]
-    return None
+        meal_name = st.text_input("Nazwa produktu")
+        weight = st.number_input("Waga (g)", min_value=0)
+        calories = st.number_input("Kalorie (kcal)", min_value=0.0)
 
-def calculate_calories(weight, calories_per_100g):
-    return (weight * calories_per_100g) / 100
+        protein = st.number_input("Białko (g) na 100g", value=0.0, min_value=0.0)
+        carbs = st.number_input("Węglowodany (g) na 100g", value=0.0, min_value=0.0)
+        fat = st.number_input("Tłuszcze (g) na 100g", value=0.0, min_value=0.0)
 
-def add_meal_form(username, prefilled=None):
-    with st.form("add_meal_form"):
-        if prefilled:
-            name_default = prefilled.get("name", "")
-            calories_default = prefilled.get("calories", 0)
-            protein_default = prefilled.get("protein", 0)
-            carbs_default = prefilled.get("carbs", 0)
-            fat_default = prefilled.get("fat", 0)
-        else:
-            name_default = ""
-            calories_default = 0
-            protein_default = 0
-            carbs_default = 0
-            fat_default = 0
-
-        meal_name = st.text_input("Nazwa produktu", value=name_default)
-        weight = st.number_input("Waga/ilość (g)", min_value=1, step=1)
-        calories_per_100g = st.number_input("Kalorie na 100g", value=calories_default, min_value=0)
-        protein = st.number_input("Białko (g) na 100g", value=protein_default, min_value=0.0)
-        carbs = st.number_input("Węglowodany (g) na 100g", value=carbs_default, min_value=0.0)
-        fat = st.number_input("Tłuszcz (g) na 100g", value=fat_default, min_value=0.0)
         meal_type = st.selectbox("Typ posiłku", ["śniadanie", "obiad", "kolacja", "przekąska", "inne"])
-        date = st.date_input("Data posiłku", value=datetime.date.today())
-        time = st.time_input("Godzina posiłku", value=datetime.datetime.now().time())
+        date = st.date_input("Data", value=datetime.date.today())
+        time = st.time_input("Godzina", value=datetime.datetime.now().time())
 
-        submitted = st.form_submit_button("Dodaj posiłek")
+        glycemic_index = st.number_input("Indeks glikemiczny", min_value=0)
 
-        if submitted:
-            calories = calculate_calories(weight, calories_per_100g)
-            gi = calculate_gi(meal_name)
-            new_entry = {
+        submitted = st.form_submit_button("Zapisz posiłek")
+
+        if submitted and meal_name and weight > 0 and calories > 0:
+            new_data = {
                 "username": username,
-                "date": f"{date} {time.strftime('%H:%M')}",
+                "date": pd.to_datetime(f"{date} {time}"),
                 "meal_name": meal_name,
                 "weight": weight,
                 "calories": calories,
@@ -64,35 +35,47 @@ def add_meal_form(username, prefilled=None):
                 "carbs": carbs,
                 "fat": fat,
                 "meal_type": meal_type,
-                "glycemic_index": gi if gi else -1
+                "glycemic_index": glycemic_index
             }
 
             try:
-                df = pd.read_csv(MEALS_FILE)
+                df = pd.read_csv(MEALS_CSV)
             except FileNotFoundError:
-                df = pd.DataFrame(columns=new_entry.keys())
+                df = pd.DataFrame(columns=new_data.keys())
 
-            df = pd.concat([df, pd.DataFrame([new_entry])], ignore_index=True)
-            df.to_csv(MEALS_FILE, index=False)
+            df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
+            df.to_csv(MEALS_CSV, index=False)
+            st.success("✅ Posiłek zapisany.")
+        elif submitted:
+            st.error("❗ Uzupełnij wszystkie pola.")
 
-            st.success(f"Dodano posiłek: {meal_name} ({weight} g)")
+def display_meals(df):
+    st.subheader("📋 Lista posiłków (dzisiaj)")
+    today = pd.Timestamp(datetime.date.today())
+    day_meals = df[pd.to_datetime(df["date"]).dt.date == today.date()]
+    
+    if day_meals.empty:
+        st.info("Brak zapisanych posiłków na dziś.")
+    else:
+        st.dataframe(day_meals[["date", "meal_name", "weight", "calories", "protein", "carbs", "fat", "meal_type", "glycemic_index"]])
 
-def display_meals(user_data):
-    if user_data.empty:
-        st.info("Brak dodanych posiłków.")
+def daily_summary(df):
+    st.subheader("📊 Podsumowanie dzienne")
+
+    today = pd.Timestamp(datetime.date.today())
+    today_meals = df[pd.to_datetime(df["date"]).dt.date == today.date()]
+
+    if today_meals.empty:
+        st.info("Brak danych do podsumowania.")
         return
 
-    st.write("### Twoje posiłki")
-    user_data_sorted = user_data.sort_values(by="date", ascending=False)
-    st.dataframe(user_data_sorted)
+    total_calories = today_meals["calories"].sum()
+    total_protein = today_meals["protein"].sum()
+    total_carbs = today_meals["carbs"].sum()
+    total_fat = today_meals["fat"].sum()
 
-def daily_summary(user_data):
-    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
-    today_data = user_data[user_data["date"].str.startswith(today_str)]
-    total_calories = today_data["calories"].sum()
-    st.write(f"**Dzisiejsze spożycie kalorii:** {total_calories:.2f} kcal")
-
-    calorie_goal = 2000
-    st.write(f"**Cel kaloryczny na dziś:** {calorie_goal} kcal")
-    progress = total_calories / calorie_goal if calorie_goal else 0
-    st.progress(min(progress, 1.0))
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Kalorie", f"{total_calories:.0f} kcal")
+    col2.metric("Białko", f"{total_protein:.1f} g")
+    col3.metric("Węglowodany", f"{total_carbs:.1f} g")
+    col4.metric("Tłuszcz", f"{total_fat:.1f} g")
