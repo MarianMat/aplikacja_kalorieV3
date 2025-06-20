@@ -1,5 +1,5 @@
 import streamlit as st
-from auth import check_login, load_user_data
+from auth import check_login
 from calories_utils import add_meal_form, display_meals, daily_summary
 from barcode_scan import fetch_product_data
 from image_ai import estimate_calories_from_image
@@ -10,11 +10,16 @@ st.set_page_config(page_title="Licznik kalorii", layout="wide")
 
 MEALS_CSV = "meals_data.csv"
 
-# 🔐 LOGOWANIE
+# 🧾 INFORMACJA DLA NIEZALOGOWANYCH
 if "username" not in st.session_state:
     st.title("🍽️ Licznik kalorii")
 
-    st.info("ℹ️ Możesz przetestować aplikację używając konta **DEMO**:\n\n**Login:** `demo`  \n**Hasło:** `demo`\n\nDziała tylko przez 24h.")
+    st.info(
+        "ℹ️ Możesz przetestować aplikację używając konta **DEMO**:\n\n"
+        "**Login:** `demo`  \n"
+        "**Hasło:** `demo`\n\n"
+        "Działa tylko przez 24h."
+    )
 
     username = st.text_input("Login")
     password = st.text_input("Hasło", type="password")
@@ -22,7 +27,7 @@ if "username" not in st.session_state:
         if check_login(username, password):
             st.session_state.username = username
             st.session_state.login_time = datetime.datetime.now()
-            st.rerun()
+            st.experimental_rerun()
         else:
             st.error("Nieprawidłowy login lub hasło.")
     st.stop()
@@ -33,7 +38,7 @@ with st.sidebar:
     st.write(f"Zalogowany jako: **{st.session_state.username}**")
     if st.button("🚪 Wyloguj się"):
         st.session_state.clear()
-        st.rerun()
+        st.experimental_rerun()
 
     st.markdown("---")
     st.subheader("📊 Statystyki")
@@ -44,12 +49,13 @@ with st.sidebar:
         user_df = pd.DataFrame()
 
     if not user_df.empty:
-        st.download_button(
-            label="📥 Pobierz dane jako CSV",
-            data=user_df.to_csv(index=False).encode("utf-8"),
-            file_name="posilki.csv",
-            mime="text/csv"
-        )
+        if st.button("📥 Pobierz CSV"):
+            st.download_button(
+                label="Pobierz dane jako CSV",
+                data=user_df.to_csv(index=False).encode("utf-8"),
+                file_name="posilki.csv",
+                mime="text/csv"
+            )
 
         if st.checkbox("📈 Pokaż wykres kalorii z ostatnich 7 dni"):
             last_7 = user_df.copy()
@@ -97,4 +103,5 @@ if not user_df.empty:
     daily_summary(user_df)
 else:
     st.info("Brak zapisanych posiłków.")
+
 
