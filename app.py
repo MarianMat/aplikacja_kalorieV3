@@ -2,18 +2,16 @@ import streamlit as st
 from auth import check_login
 from calories_utils import add_meal_form, display_meals, daily_summary
 
-# Przykładowe importy, które możesz rozbudować:
-# from barcode_scan import fetch_product_data
-# from image_ai import estimate_calories_from_image
+from barcode_scan import fetch_product_data
+from image_ai import estimate_calories_from_image
 
 def main():
     user = check_login()
     if not user:
-        return  # jeśli nie zalogowany, wyświetla logowanie i koniec
+        return
 
     st.title(f"Witaj, {user}!")
 
-    # Wybór metody dodawania posiłku
     option = st.radio("Wybierz metodę dodania posiłku:", ["Ręcznie", "Kod kreskowy", "Zdjęcie AI"])
 
     if option == "Ręcznie":
@@ -23,13 +21,13 @@ def main():
         barcode = st.text_input("Wpisz kod kreskowy produktu")
         if st.button("Szukaj produktu"):
             if barcode:
-                # product = fetch_product_data(barcode)
-                # if product:
-                #     st.write("Znaleziony produkt:")
-                #     st.json(product)
-                # else:
-                #     st.error("Nie znaleziono produktu o takim kodzie.")
-                st.info("Funkcja wyszukiwania kodu kreskowego jeszcze nie zaimplementowana.")
+                product = fetch_product_data(barcode)
+                if product:
+                    st.write("Znaleziony produkt:")
+                    st.json(product)
+                    # Możesz tu dodać możliwość dodania produktu do posiłków, np. formularz z wypełnionymi polami
+                else:
+                    st.error("Nie znaleziono produktu o takim kodzie.")
             else:
                 st.warning("Wpisz kod kreskowy.")
 
@@ -40,12 +38,10 @@ def main():
         if img:
             st.image(img, caption="Wybrane zdjęcie", use_column_width=True)
             if st.button("Analizuj zdjęcie i szacuj kalorie"):
-                # result = estimate_calories_from_image(img)
-                # st.write("Wynik analizy AI:")
-                # st.markdown(result)
-                st.info("Funkcja analizy zdjęcia jeszcze nie zaimplementowana.")
+                result = estimate_calories_from_image(img)
+                st.write("Wynik analizy AI:")
+                st.markdown(result)
 
-    # Poniżej wyświetlamy listę posiłków i podsumowanie
     import pandas as pd
     try:
         df = pd.read_csv("meals_data.csv")
