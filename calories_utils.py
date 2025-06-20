@@ -4,7 +4,6 @@ import datetime
 
 MEALS_FILE = "meals_data.csv"
 
-# Lista z wartościami IG dla popularnych produktów - możesz rozbudować
 GI_LIST = {
     "chleb biały": 70,
     "ryż biały": 73,
@@ -13,7 +12,6 @@ GI_LIST = {
     "marchew": 35,
     "ziemniaki": 85,
     "makaron": 50,
-    # dodaj inne
 }
 
 def calculate_gi(meal_name):
@@ -21,7 +19,7 @@ def calculate_gi(meal_name):
     for key in GI_LIST.keys():
         if key in name_lower:
             return GI_LIST[key]
-    return None  # jeśli nieznany
+    return None
 
 def calculate_calories(weight, calories_per_100g):
     return (weight * calories_per_100g) / 100
@@ -74,7 +72,7 @@ def add_meal_form(username, prefilled=None):
             except FileNotFoundError:
                 df = pd.DataFrame(columns=new_entry.keys())
 
-            df = df.append(new_entry, ignore_index=True)
+            df = pd.concat([df, pd.DataFrame([new_entry])], ignore_index=True)
             df.to_csv(MEALS_FILE, index=False)
 
             st.success(f"Dodano posiłek: {meal_name} ({weight} g)")
@@ -93,7 +91,7 @@ def daily_summary(user_data):
     today_data = user_data[user_data["date"].str.startswith(today_str)]
     total_calories = today_data["calories"].sum()
     st.write(f"**Dzisiejsze spożycie kalorii:** {total_calories:.2f} kcal")
-    # Cel kaloryczny - możesz tu dodać konfigurację lub domyślną wartość
+
     calorie_goal = 2000
     st.write(f"**Cel kaloryczny na dziś:** {calorie_goal} kcal")
     progress = total_calories / calorie_goal if calorie_goal else 0
