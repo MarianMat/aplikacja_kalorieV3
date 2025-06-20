@@ -32,19 +32,21 @@ if "username" not in st.session_state:
 # 📤 PANEL BOCZNY
 with st.sidebar:
     st.title("👤 Użytkownik")
-    display_name = st.session_state.username
-    if display_name == "Wolf":
-        display_name = "Chmarynka ☁️"
-    st.write(f"Zalogowany jako: **{display_name}**")
-    if st.button("🚪 Wyloguj się"):
-        st.session_state.clear()
-        st.experimental_rerun()
+    if "username" in st.session_state:
+        from auth import get_display_name  # upewnij się, że ta funkcja jest w auth.py
+        display_name = get_display_name(st.session_state.username)
+        st.write(f"Zalogowany jako: **{display_name}**")
+        if st.button("🚪 Wyloguj się"):
+            st.session_state.clear()
+            st.experimental_rerun()
+    else:
+        st.info("Nie jesteś zalogowany.")
 
     st.markdown("---")
     st.subheader("📊 Statystyki")
     try:
         df = pd.read_csv(MEALS_CSV)
-        user_df = df[df["username"] == st.session_state.username]
+        user_df = df[df["username"] == st.session_state.get("username", "")]
     except FileNotFoundError:
         user_df = pd.DataFrame()
 
@@ -91,7 +93,8 @@ with st.sidebar:
                     st.warning("🔒 Eksport do Google Sheets wymaga integracji z Google API (do wdrożenia osobno).")
         else:
             st.info("Brak danych w wybranym zakresie.")
-
+    else:
+        st.info("Brak danych do wyświetlenia.")
 # 🧾 FORMULARZ DODAWANIA POSIŁKU
 st.title("➕ Dodaj posiłek")
 option = st.radio("Wybierz metodę dodania posiłku:", ["Ręcznie", "Kod kreskowy", "Zdjęcie AI"])
