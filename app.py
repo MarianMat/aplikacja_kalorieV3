@@ -5,13 +5,12 @@ from barcode_scan import fetch_product_data
 from image_ai import estimate_calories_from_image
 import pandas as pd
 import datetime
-import os
 
 st.set_page_config(page_title="Licznik kalorii", layout="wide")
 
 MEALS_CSV = "meals_data.csv"
 
-# 🧾 INFORMACJA DLA NIEZALOGOWANYCH
+# 🔐 LOGOWANIE
 if "username" not in st.session_state:
     st.title("🍽️ Licznik kalorii")
 
@@ -45,13 +44,12 @@ with st.sidebar:
         user_df = pd.DataFrame()
 
     if not user_df.empty:
-        if st.button("📥 Pobierz CSV"):
-            st.download_button(
-                label="Pobierz dane jako CSV",
-                data=user_df.to_csv(index=False).encode("utf-8"),
-                file_name="posilki.csv",
-                mime="text/csv"
-            )
+        st.download_button(
+            label="📥 Pobierz dane jako CSV",
+            data=user_df.to_csv(index=False).encode("utf-8"),
+            file_name="posilki.csv",
+            mime="text/csv"
+        )
 
         if st.checkbox("📈 Pokaż wykres kalorii z ostatnich 7 dni"):
             last_7 = user_df.copy()
@@ -99,3 +97,4 @@ if not user_df.empty:
     daily_summary(user_df)
 else:
     st.info("Brak zapisanych posiłków.")
+
