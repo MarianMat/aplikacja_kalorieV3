@@ -24,7 +24,7 @@ if "username" not in st.session_state:
         if check_login(username, password):
             st.session_state.username = username
             st.session_state.login_time = datetime.datetime.now()
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Nieprawidłowy login lub hasło.")
     st.stop()
