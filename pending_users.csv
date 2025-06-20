@@ -1,1 +1,2 @@
-username,password,email,status,expiry
+username,password_hash,requested_date
+
