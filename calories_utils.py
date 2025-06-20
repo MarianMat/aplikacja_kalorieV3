@@ -9,18 +9,18 @@ def add_meal_form(username):
         st.subheader("➕ Dodaj posiłek")
 
         meal_name = st.text_input("Nazwa produktu")
-        weight = st.number_input("Waga (g)", min_value=0)
-        calories = st.number_input("Kalorie (kcal)", min_value=0.0)
+        weight = st.number_input("Waga (g)", min_value=0, value=0, step=1)
 
-        protein = st.number_input("Białko (g) na 100g", value=0.0, min_value=0.0)
-        carbs = st.number_input("Węglowodany (g) na 100g", value=0.0, min_value=0.0)
-        fat = st.number_input("Tłuszcze (g) na 100g", value=0.0, min_value=0.0)
+        calories = st.number_input("Kalorie (kcal)", min_value=0.0, value=0.0, step=1.0)
+        protein = st.number_input("Białko (g) na 100g", min_value=0.0, value=0.0, step=0.1)
+        carbs = st.number_input("Węglowodany (g) na 100g", min_value=0.0, value=0.0, step=0.1)
+        fat = st.number_input("Tłuszcze (g) na 100g", min_value=0.0, value=0.0, step=0.1)
 
         meal_type = st.selectbox("Typ posiłku", ["śniadanie", "obiad", "kolacja", "przekąska", "inne"])
         date = st.date_input("Data", value=datetime.date.today())
         time = st.time_input("Godzina", value=datetime.datetime.now().time())
 
-        glycemic_index = st.number_input("Indeks glikemiczny", min_value=0)
+        glycemic_index = st.number_input("Indeks glikemiczny", min_value=0, value=0, step=1)
 
         submitted = st.form_submit_button("Zapisz posiłek")
 
