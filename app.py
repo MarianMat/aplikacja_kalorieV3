@@ -1,17 +1,18 @@
 import streamlit as st
-from auth import check_login
+from auth import check_login, load_user_data
 from calories_utils import add_meal_form, display_meals, daily_summary
 from barcode_scan import fetch_product_data
 from image_ai import estimate_calories_from_image
 import pandas as pd
 import datetime
+from datetime import date, timedelta
 import os
 
 st.set_page_config(page_title="Licznik kalorii", layout="wide")
 
 MEALS_CSV = "meals_data.csv"
 
-# 🧾 INFORMACJA DLA NIEZALOGOWANYCH
+# 🧾 PANEL LOGOWANIA
 if "username" not in st.session_state:
     st.title("🍽️ Licznik kalorii")
 
@@ -22,8 +23,8 @@ if "username" not in st.session_state:
     if st.button("Zaloguj się"):
         if check_login(username, password):
             st.session_state.username = username
-            st.session_state.login_time = datetime.datetime.now().isoformat()
-            st.rerun()
+            st.session_state.login_time = datetime.datetime.now()
+            st.experimental_rerun()
         else:
             st.error("Nieprawidłowy login lub hasło.")
     st.stop()
@@ -34,7 +35,7 @@ with st.sidebar:
     st.write(f"Zalogowany jako: **{st.session_state.username}**")
     if st.button("🚪 Wyloguj się"):
         st.session_state.clear()
-        st.rerun()
+        st.experimental_rerun()
 
     st.markdown("---")
     st.subheader("📊 Statystyki")
@@ -45,56 +46,48 @@ with st.sidebar:
         user_df = pd.DataFrame()
 
     if not user_df.empty:
-        st.download_button(
-            label="📥 Pobierz wszystkie dane jako CSV",
-            data=user_df.to_csv(index=False).encode("utf-8"),
-            file_name="posilki.csv",
-            mime="text/csv"
-        )
+        # 🔽 Eksport całości
+        if st.button("📥 Pobierz wszystkie dane jako CSV"):
+            st.download_button(
+                label="📥 Pobierz dane jako CSV",
+                data=user_df.to_csv(index=False).encode("utf-8"),
+                file_name="posilki.csv",
+                mime="text/csv"
+            )
 
+        # 📈 Wykres z ostatnich 7 dni
         if st.checkbox("📈 Pokaż wykres kalorii z ostatnich 7 dni"):
             last_7 = user_df.copy()
             last_7["date"] = pd.to_datetime(last_7["date"]).dt.date
             chart_df = last_7.groupby("date")["calories"].sum().reset_index()
             st.line_chart(chart_df, x="date", y="calories")
 
-        # 📊 PANEL ANALIZY OKRESOWEJ
-        st.markdown("---")
-        st.subheader("📅 Analiza kalorii w wybranym okresie")
+        # 🔍 Nowy zakres dat i eksport danych
+        st.markdown("### 📅 Zakres analiz")
+        start_date = st.date_input("Od", value=date.today() - timedelta(days=7))
+        end_date = st.date_input("Do", value=date.today())
 
-        start_date = st.date_input("Data początkowa", datetime.date.today() - datetime.timedelta(days=7))
-        end_date = st.date_input("Data końcowa", datetime.date.today())
+        filtered_df = user_df.copy()
+        filtered_df["date"] = pd.to_datetime(filtered_df["date"]).dt.date
+        filtered_df = filtered_df[(filtered_df["date"] >= start_date) & (filtered_df["date"] <= end_date)]
 
-        if start_date > end_date:
-            st.error("❌ Data początkowa musi być przed końcową.")
+        if not filtered_df.empty:
+            st.line_chart(filtered_df.groupby("date")["calories"].sum(), use_container_width=True)
+            st.write(f"🔢 **Suma kalorii od {start_date} do {end_date}:** {filtered_df['calories'].sum():.0f} kcal")
+
+            export_format = st.radio("Eksportuj dane jako:", ["CSV", "Google Sheets"])
+            if st.button("📤 Eksportuj dane"):
+                if export_format == "CSV":
+                    st.download_button(
+                        label="📥 Pobierz CSV",
+                        data=filtered_df.to_csv(index=False).encode("utf-8"),
+                        file_name=f"kalorie_{start_date}_do_{end_date}.csv",
+                        mime="text/csv"
+                    )
+                elif export_format == "Google Sheets":
+                    st.warning("🔒 Eksport do Google Sheets wymaga integracji z Google API (do wdrożenia osobno).")
         else:
-            filtered_df = user_df[
-                (pd.to_datetime(user_df["date"]).dt.date >= start_date) &
-                (pd.to_datetime(user_df["date"]).dt.date <= end_date)
-            ]
-
-            if not filtered_df.empty:
-                st.success(f"📈 Znaleziono {len(filtered_df)} posiłków w tym okresie")
-
-                calories_by_day = filtered_df.groupby("date")["calories"].sum().reset_index()
-
-                chart_type = st.selectbox("Typ wykresu", ["Liniowy", "Słupkowy"])
-                if chart_type == "Liniowy":
-                    st.line_chart(calories_by_day, x="date", y="calories")
-                else:
-                    st.bar_chart(calories_by_day.set_index("date"))
-
-                st.markdown(f"**🔢 Suma kalorii:** {filtered_df['calories'].sum()} kcal")
-                st.markdown(f"**📊 Średnia dzienna:** {filtered_df['calories'].mean():.2f} kcal")
-
-                st.download_button(
-                    label="📥 Pobierz CSV z tego okresu",
-                    data=filtered_df.to_csv(index=False).encode("utf-8"),
-                    file_name=f"posilki_{start_date}_{end_date}.csv",
-                    mime="text/csv"
-                )
-            else:
-                st.warning("⚠️ Brak danych w wybranym zakresie.")
+            st.info("Brak danych w wybranym zakresie.")
 
 # 🧾 FORMULARZ DODAWANIA POSIŁKU
 st.title("➕ Dodaj posiłek")
@@ -131,9 +124,8 @@ elif option == "Zdjęcie AI":
             add_meal_form(st.session_state.username)
 
 # 📋 WYŚWIETLANIE I PODSUMOWANIE
-if 'user_df' in locals() and not user_df.empty:
+if not user_df.empty:
     display_meals(user_df)
     daily_summary(user_df)
 else:
     st.info("Brak zapisanych posiłków.")
-
