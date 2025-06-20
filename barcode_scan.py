@@ -1,20 +1,29 @@
 import requests
 
-def fetch_product_data(barcode):
+def fetch_product_data(barcode: str):
+    """
+    Pobiera dane produktu po kodzie kreskowym z OpenFoodFacts.
+    Zwraca słownik z nazwą produktu i wartościami odżywczymi lub None jeśli brak.
+    """
     url = f"https://world.openfoodfacts.org/api/v0/product/{barcode}.json"
     try:
-        r = requests.get(url, timeout=5)
-        data = r.json()
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+
         if data.get("status") == 1:
             product = data["product"]
-            nutriments = product.get("nutriments", {})
-            return {
+            result = {
                 "product_name": product.get("product_name", "Brak nazwy"),
-                "calories": float(nutriments.get("energy-kcal_100g", 0.0)),
-                "protein": float(nutriments.get("proteins_100g", 0.0)),
-                "fat": float(nutriments.get("fat_100g", 0.0)),
-                "carbs": float(nutriments.get("carbohydrates_100g", 0.0))
+                "calories": float(product.get("nutriments", {}).get("energy-kcal_100g", 0)),
+                "protein": float(product.get("nutriments", {}).get("proteins_100g", 0)),
+                "carbs": float(product.get("nutriments", {}).get("carbohydrates_100g", 0)),
+                "fat": float(product.get("nutriments", {}).get("fat_100g", 0)),
+                "glycemic_index": None  # Tu możesz dodać własną logikę
             }
-    except Exception:
-        pass
-    return None
+            return result
+        else:
+            return None
+    except Exception as e:
+        print(f"Błąd pobierania danych z OpenFoodFacts: {e}")
+        return None
