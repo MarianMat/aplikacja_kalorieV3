@@ -1,5 +1,5 @@
 import streamlit as st
-from auth import check_login, load_user_data
+from auth import check_login
 from calories_utils import add_meal_form, display_meals, daily_summary
 from barcode_scan import fetch_product_data
 from image_ai import estimate_calories_from_image
