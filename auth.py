@@ -29,8 +29,7 @@ def check_login():
     if not st.session_state.login:
         st.title("🔐 Logowanie")
         st.info("Konto demo: login 'demo', hasło 'demo'")
-        st.info("Konto Wolf: login 'Wolf', hasło 'Wolf'")
-
+        
         username = st.text_input("Login")
         password = st.text_input("Hasło", type="password")
 
