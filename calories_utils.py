@@ -1,4 +1,4 @@
-# Oblicimport streamlit as st
+import streamlit as st
 import pandas as pd
 import datetime
 
@@ -74,5 +74,27 @@ def add_meal_form(username, prefilled=None):
             except FileNotFoundError:
                 df = pd.DataFrame(columns=new_entry.keys())
 
-            df = df
-zenia kalorii i indeks glikemiczny
+            df = df.append(new_entry, ignore_index=True)
+            df.to_csv(MEALS_FILE, index=False)
+
+            st.success(f"Dodano posiłek: {meal_name} ({weight} g)")
+
+def display_meals(user_data):
+    if user_data.empty:
+        st.info("Brak dodanych posiłków.")
+        return
+
+    st.write("### Twoje posiłki")
+    user_data_sorted = user_data.sort_values(by="date", ascending=False)
+    st.dataframe(user_data_sorted)
+
+def daily_summary(user_data):
+    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    today_data = user_data[user_data["date"].str.startswith(today_str)]
+    total_calories = today_data["calories"].sum()
+    st.write(f"**Dzisiejsze spożycie kalorii:** {total_calories:.2f} kcal")
+    # Cel kaloryczny - możesz tu dodać konfigurację lub domyślną wartość
+    calorie_goal = 2000
+    st.write(f"**Cel kaloryczny na dziś:** {calorie_goal} kcal")
+    progress = total_calories / calorie_goal if calorie_goal else 0
+    st.progress(min(progress, 1.0))
