@@ -1,38 +1,41 @@
 import streamlit as st
 from auth import check_login, load_user_data
-from calories_utils import add_meal_form, display_meals, daily_summary
-from stats import show_stats
+from calories_utils import add_meal_form, display_meals, daily_summary, glycemic_index_alert
+from barcode_scan import barcode_input_form
+from image_ai import image_upload_form
 
-st.set_page_config(page_title="Liczenie Kalorii", layout="centered")
-st.title("🍽️ Licznik Kalorii i IG")
+def main():
+    user = check_login()
 
-# Informacja o koncie demo
-st.info(
-    "ℹ️ Możesz zalogować się na konto DEMO:\n\n"
-    "- login: **demo**\n"
-    "- hasło: **demo**\n\n"
-    "Konto demo jest aktywne przez 1 dzień, po czym będzie wymagało kontaktu z właścicielem aplikacji."
-)
+    if user:
+        st.title(f"Witaj, {user}!")
 
-user = check_login()
-if not user:
-    st.stop()
+        # Informacja o koncie demo tylko raz
+        if user == "demo" and "demo_info_shown" not in st.session_state:
+            st.info("Używasz konta DEMO (login: demo, hasło: demo). Konto jest aktywne 1 dzień.")
+            st.session_state.demo_info_shown = True
 
-user_data = load_user_data(user)
+        st.markdown("---")
+        st.header("📦 Wprowadź lub zeskanuj kod kreskowy produktu")
+        product_data = barcode_input_form()
 
-menu = st.sidebar.radio("Menu", ["📅 Dziennik", "📊 Statystyki", "⬇️ Eksport"])
+        st.markdown("---")
+        st.header("📷 Rozpoznawanie kalorii ze zdjęcia posiłku")
+        calories_from_image = image_upload_form()
 
-if menu == "📅 Dziennik":
-    daily_summary(user_data)
-    add_meal_form(user)
-    display_meals(user_data)
+        st.markdown("---")
+        st.header("➕ Dodaj posiłek ręcznie")
+        add_meal_form(user)
 
-elif menu == "📊 Statystyki":
-    show_stats(user)
+        st.markdown("---")
+        df = load_user_data(user)
+        display_meals(df)
+        daily_summary(df)
 
-elif menu == "⬇️ Eksport":
-    st.download_button(
-        "Pobierz dane jako CSV",
-        data=user_data.to_csv(index=False),
-        file_name=f"{user}_dane.csv"
-    )
+        # Pokaz alert indeksu glikemicznego dla ostatniego posiłku
+        if not df.empty and "glycemic_index" in df.columns:
+            latest_gi = df.iloc[-1]["glycemic_index"]
+            glycemic_index_alert(latest_gi)
+
+if __name__ == "__main__":
+    main()
