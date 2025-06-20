@@ -51,5 +51,5 @@ def check_login(username: str, password: str) -> bool:
 
 def get_display_name(username: str) -> str:
     if username == "Wolf":
-        return "Chmarynka ☁️"
+        return "Chmarynka 😶‍🌫️"
     return username
