@@ -1,1 +1,4 @@
-user,date,time,product,weight,calories,gi,type
+username,password_hash,active,expire_date
+Wolf,5a8831f965e99ae7faeea7e9c60acb97b43edc0b3f0f8e7216c7b8b66a5a9d99,True,
+demo,9f9d51bc70ef21ca5c14f307980a29d8a79e1d63,True,2025-06-21
+
