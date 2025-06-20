@@ -49,3 +49,7 @@ def check_login(username: str, password: str) -> bool:
     # Inne konta (jeśli dodasz) — domyślnie odrzucamy
     return False
 
+def get_display_name(username: str) -> str:
+    if username == "Wolf":
+        return "Chmarynka ☁️"
+    return username
