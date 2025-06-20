@@ -32,7 +32,10 @@ if "username" not in st.session_state:
 # 📤 PANEL BOCZNY
 with st.sidebar:
     st.title("👤 Użytkownik")
-    st.write(f"Zalogowany jako: **{st.session_state.username}**")
+    display_name = st.session_state.username
+    if display_name == "Wolf":
+        display_name = "Chmarynka ☁️"
+    st.write(f"Zalogowany jako: **{display_name}**")
     if st.button("🚪 Wyloguj się"):
         st.session_state.clear()
         st.experimental_rerun()
@@ -129,3 +132,4 @@ if not user_df.empty:
     daily_summary(user_df)
 else:
     st.info("Brak zapisanych posiłków.")
+
