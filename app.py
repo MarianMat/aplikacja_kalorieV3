@@ -106,12 +106,14 @@ elif option == "Kod kreskowy":
     if st.button("🔍 Pobierz dane z OpenFoodFacts") and barcode:
         data = fetch_product_data(barcode)
         if data:
-            st.success("✅ Produkt znaleziony!")
-            st.json(data)
-            st.session_state.prefill = data
-            add_meal_form(st.session_state.username)
+                st.success("✅ Produkt znaleziony!")
+                if isinstance(data, dict):
+                st.json(data)
+                st.session_state.prefill = data
+                add_meal_form(st.session_state.username)
         else:
-            st.warning("❗ Nie znaleziono produktu.")
+        st.warning(data)
+
 
 elif option == "Zdjęcie AI":
     image_file = st.file_uploader("📷 Wgraj zdjęcie posiłku", type=["jpg", "jpeg", "png"])
